@@ -53,7 +53,7 @@ void {{classname}}::fromJson{{^isEnum}}Object{{/isEnum}}{{#isEnum}}Value{{/isEnu
     if(json["{{baseName}}"].isArray()){
         auto arr = json["{{baseName}}"].toArray();
         m_{{name}}_isValid = true;
-        if(arr.count() > 0) {
+        if(arr.size() > 0) {
             for (const QJsonValue jval : arr) {
                 {{^items.isContainer}}{{items.baseType}}{{/items.isContainer}}{{#items.isArray}}QList<{{items.items.baseType}}>{{/items.isArray}}{{#items.isMap}}QMap<QString, {{items.items.baseType}}>{{/items.isMap}} item;
                 m_{{name}}_isValid &= ::{{cppNamespace}}::fromJsonValue(item, jval);
@@ -65,7 +65,7 @@ void {{classname}}::fromJson{{^isEnum}}Object{{/isEnum}}{{#isEnum}}Value{{/isEnu
     if(json["{{baseName}}"].isObject()){
         auto varmap = json["{{baseName}}"].toObject().toVariantMap();
         m_{{name}}_isValid = true;
-        if(varmap.count() > 0){
+        if(varmap.size() > 0){
             for(auto val : varmap.keys()){
                 {{^items.isContainer}}{{items.baseType}}{{/items.isContainer}}{{#items.isArray}}QList<{{items.items.baseType}}>{{/items.isArray}}{{#items.isMap}}QMap<QString, {{items.items.baseType}}>{{/items.isMap}} item;
                 auto jval = QJsonValue::fromVariant(varmap.value(val));

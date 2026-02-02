@@ -51,24 +51,33 @@ void OAIApiRouter::setupRoutes() {
     
     // POST /pet
     m_server->route("/v2/pet",
-        QHttpServerRequest::Method::POST,
+        QHttpServerRequest::Method::Post,
         [this](const QHttpServerRequest &request) {
+            try {
             // Body parameters
 
             OAIPet body;
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
-            ::OpenAPI::fromJsonValue(body, doc.object());
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
+            ::OpenAPI::fromJsonValue(body, requestDoc.object());
 
 
             // Call handler
             mOAIPetApiHandler->addPet(body);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // DELETE /pet/{petId}
     m_server->route("/v2/pet/{petId}",
-        QHttpServerRequest::Method::DELETE,
+        QHttpServerRequest::Method::Delete,
         [this](qint64 pet_id, const QHttpServerRequest &request) {
+            try {
             // Header parameters
             QString api_key;
             if (request.headers().contains("api_key")) {
@@ -78,13 +87,21 @@ void OAIApiRouter::setupRoutes() {
 
             // Call handler
             mOAIPetApiHandler->deletePet(pet_id, api_key);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // GET /pet/findByStatus
     m_server->route("/v2/pet/findByStatus",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](const QHttpServerRequest &request) {
+            try {
             // Query parameters
             auto query = request.query();
             QList<QString> status = QList<QString>();
@@ -95,19 +112,27 @@ void OAIApiRouter::setupRoutes() {
             // Call handler
             auto result = mOAIPetApiHandler->findPetsByStatus(status);
 
-            // Serialize response
-            QJsonArray jsonArray;
-            for (const auto &item : result) {
-                jsonArray.append(::OpenAPI::toJsonValue(item));
+                // Serialize response
+                QJsonArray jsonArray;
+                for (const auto &item : result) {
+                    jsonArray.append(::OpenAPI::toJsonValue(item));
+                }
+                QJsonDocument responseDoc(jsonArray);
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
             }
-            QJsonDocument doc(jsonArray);
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
         });
     
     // GET /pet/findByTags
     m_server->route("/v2/pet/findByTags",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](const QHttpServerRequest &request) {
+            try {
             // Query parameters
             auto query = request.query();
             QList<QString> tags = QList<QString>();
@@ -118,147 +143,227 @@ void OAIApiRouter::setupRoutes() {
             // Call handler
             auto result = mOAIPetApiHandler->findPetsByTags(tags);
 
-            // Serialize response
-            QJsonArray jsonArray;
-            for (const auto &item : result) {
-                jsonArray.append(::OpenAPI::toJsonValue(item));
+                // Serialize response
+                QJsonArray jsonArray;
+                for (const auto &item : result) {
+                    jsonArray.append(::OpenAPI::toJsonValue(item));
+                }
+                QJsonDocument responseDoc(jsonArray);
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
             }
-            QJsonDocument doc(jsonArray);
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
         });
     
     // GET /pet/{petId}
     m_server->route("/v2/pet/{petId}",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](qint64 pet_id, const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             auto result = mOAIPetApiHandler->getPetById(pet_id);
 
-            // Serialize response
-            QJsonDocument doc(::OpenAPI::toJsonValue(result).toObject());
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
+                // Serialize response
+                QJsonDocument responseDoc(::OpenAPI::toJsonValue(result).toObject());
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // PUT /pet
     m_server->route("/v2/pet",
-        QHttpServerRequest::Method::PUT,
+        QHttpServerRequest::Method::Put,
         [this](const QHttpServerRequest &request) {
+            try {
             // Body parameters
 
             OAIPet body;
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
-            ::OpenAPI::fromJsonValue(body, doc.object());
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
+            ::OpenAPI::fromJsonValue(body, requestDoc.object());
 
 
             // Call handler
             mOAIPetApiHandler->updatePet(body);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // POST /pet/{petId}
     m_server->route("/v2/pet/{petId}",
-        QHttpServerRequest::Method::POST,
+        QHttpServerRequest::Method::Post,
         [this](qint64 pet_id, const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             mOAIPetApiHandler->updatePetWithForm(pet_id, name, status);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // POST /pet/{petId}/uploadImage
     m_server->route("/v2/pet/{petId}/uploadImage",
-        QHttpServerRequest::Method::POST,
+        QHttpServerRequest::Method::Post,
         [this](qint64 pet_id, const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             auto result = mOAIPetApiHandler->uploadFile(pet_id, additional_metadata, file);
 
-            // Serialize response
-            QJsonDocument doc(::OpenAPI::toJsonValue(result).toObject());
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
+                // Serialize response
+                QJsonDocument responseDoc(::OpenAPI::toJsonValue(result).toObject());
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // DELETE /store/order/{orderId}
     m_server->route("/v2/store/order/{orderId}",
-        QHttpServerRequest::Method::DELETE,
+        QHttpServerRequest::Method::Delete,
         [this](const QString& order_id, const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             mOAIStoreApiHandler->deleteOrder(order_id);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // GET /store/inventory
     m_server->route("/v2/store/inventory",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             auto result = mOAIStoreApiHandler->getInventory();
 
-            // Serialize response
-            QByteArray body = ::OpenAPI::toStringValue(result).toUtf8();
-            return QHttpServerResponse("text/plain", body);
+                // Serialize response
+                QByteArray body = ::OpenAPI::toStringValue(result).toUtf8();
+                return QHttpServerResponse("text/plain", body);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // GET /store/order/{orderId}
     m_server->route("/v2/store/order/{orderId}",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](qint64 order_id, const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             auto result = mOAIStoreApiHandler->getOrderById(order_id);
 
-            // Serialize response
-            QJsonDocument doc(::OpenAPI::toJsonValue(result).toObject());
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
+                // Serialize response
+                QJsonDocument responseDoc(::OpenAPI::toJsonValue(result).toObject());
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // POST /store/order
     m_server->route("/v2/store/order",
-        QHttpServerRequest::Method::POST,
+        QHttpServerRequest::Method::Post,
         [this](const QHttpServerRequest &request) {
+            try {
             // Body parameters
 
             OAIOrder body;
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
-            ::OpenAPI::fromJsonValue(body, doc.object());
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
+            ::OpenAPI::fromJsonValue(body, requestDoc.object());
 
 
             // Call handler
             auto result = mOAIStoreApiHandler->placeOrder(body);
 
-            // Serialize response
-            QJsonDocument doc(::OpenAPI::toJsonValue(result).toObject());
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
+                // Serialize response
+                QJsonDocument responseDoc(::OpenAPI::toJsonValue(result).toObject());
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // POST /user
     m_server->route("/v2/user",
-        QHttpServerRequest::Method::POST,
+        QHttpServerRequest::Method::Post,
         [this](const QHttpServerRequest &request) {
+            try {
             // Body parameters
 
             OAIUser body;
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
-            ::OpenAPI::fromJsonValue(body, doc.object());
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
+            ::OpenAPI::fromJsonValue(body, requestDoc.object());
 
 
             // Call handler
             mOAIUserApiHandler->createUser(body);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // POST /user/createWithArray
     m_server->route("/v2/user/createWithArray",
-        QHttpServerRequest::Method::POST,
+        QHttpServerRequest::Method::Post,
         [this](const QHttpServerRequest &request) {
+            try {
             // Body parameters
 
             QList<OAIUser> body;
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
-            QJsonArray jsonArray = doc.array();
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
+            QJsonArray jsonArray = requestDoc.array();
             for (const auto &item : jsonArray) {
                 OAIUser obj;
                 ::OpenAPI::fromJsonValue(obj, item);
@@ -268,18 +373,26 @@ void OAIApiRouter::setupRoutes() {
 
             // Call handler
             mOAIUserApiHandler->createUsersWithArrayInput(body);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // POST /user/createWithList
     m_server->route("/v2/user/createWithList",
-        QHttpServerRequest::Method::POST,
+        QHttpServerRequest::Method::Post,
         [this](const QHttpServerRequest &request) {
+            try {
             // Body parameters
 
             QList<OAIUser> body;
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
-            QJsonArray jsonArray = doc.array();
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
+            QJsonArray jsonArray = requestDoc.array();
             for (const auto &item : jsonArray) {
                 OAIUser obj;
                 ::OpenAPI::fromJsonValue(obj, item);
@@ -289,36 +402,60 @@ void OAIApiRouter::setupRoutes() {
 
             // Call handler
             mOAIUserApiHandler->createUsersWithListInput(body);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // DELETE /user/{username}
     m_server->route("/v2/user/{username}",
-        QHttpServerRequest::Method::DELETE,
+        QHttpServerRequest::Method::Delete,
         [this](const QString& username, const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             mOAIUserApiHandler->deleteUser(username);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // GET /user/{username}
     m_server->route("/v2/user/{username}",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](const QString& username, const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             auto result = mOAIUserApiHandler->getUserByName(username);
 
-            // Serialize response
-            QJsonDocument doc(::OpenAPI::toJsonValue(result).toObject());
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
+                // Serialize response
+                QJsonDocument responseDoc(::OpenAPI::toJsonValue(result).toObject());
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // GET /user/login
     m_server->route("/v2/user/login",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](const QHttpServerRequest &request) {
+            try {
             // Query parameters
             auto query = request.query();
             QString username = QString("");
@@ -333,35 +470,58 @@ void OAIApiRouter::setupRoutes() {
             // Call handler
             auto result = mOAIUserApiHandler->loginUser(username, password);
 
-            // Serialize response
-            QByteArray body = ::OpenAPI::toStringValue(result).toUtf8();
-            return QHttpServerResponse("text/plain", body);
+                // Serialize response
+                QByteArray body = ::OpenAPI::toStringValue(result).toUtf8();
+                return QHttpServerResponse("text/plain", body);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // GET /user/logout
     m_server->route("/v2/user/logout",
-        QHttpServerRequest::Method::GET,
+        QHttpServerRequest::Method::Get,
         [this](const QHttpServerRequest &request) {
+            try {
 
             // Call handler
             mOAIUserApiHandler->logoutUser();
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
     // PUT /user/{username}
     m_server->route("/v2/user/{username}",
-        QHttpServerRequest::Method::PUT,
+        QHttpServerRequest::Method::Put,
         [this](const QString& username, const QHttpServerRequest &request) {
+            try {
             // Body parameters
 
             OAIUser body;
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
-            ::OpenAPI::fromJsonValue(body, doc.object());
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
+            ::OpenAPI::fromJsonValue(body, requestDoc.object());
 
 
             // Call handler
             mOAIUserApiHandler->updateUser(username, body);
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+            } catch (const std::exception& e) {
+                // Return error response
+                OAIErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::OpenAPI::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     
 }

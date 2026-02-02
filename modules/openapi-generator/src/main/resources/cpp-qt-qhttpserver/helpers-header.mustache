@@ -62,7 +62,7 @@ QString toStringValue(const QList<T> &val) {
     for (const auto &item : val) {
         strArray.append(toStringValue(item) + ",");
     }
-    if (val.count() > 0) {
+    if (val.size() > 0) {
         strArray.chop(1);
     }
     return strArray;
@@ -114,7 +114,7 @@ bool fromStringValue(const QString &inStr, {{prefix}}HttpFileElement &value);
 
 template <typename T>
 bool fromStringValue(const QList<QString> &inStr, QList<T> &val) {
-    bool ok = (inStr.count() > 0);
+    bool ok = (inStr.size() > 0);
     for (const auto &item : inStr) {
         T itemVal;
         ok &= fromStringValue(item, itemVal);
@@ -125,7 +125,7 @@ bool fromStringValue(const QList<QString> &inStr, QList<T> &val) {
 
 template <typename T>
 bool fromStringValue(const QMap<QString, QString> &inStr, QMap<QString, T> &val) {
-    bool ok = (inStr.count() > 0);
+    bool ok = (inStr.size() > 0);
     for (const auto &itemkey : inStr.keys()) {
         T itemVal;
         ok &= fromStringValue(inStr.value(itemkey), itemVal);
@@ -167,7 +167,7 @@ bool fromJsonValue(QMap<QString, T> &val, const QJsonValue &jval) {
     bool ok = true;
     if (jval.isObject()) {
         auto varmap = jval.toObject().toVariantMap();
-        if (varmap.count() > 0) {
+        if (varmap.size() > 0) {
             for (const auto &itemkey : varmap.keys()) {
                 T itemVal;
                 ok &= fromJsonValue(itemVal, QJsonValue::fromVariant(varmap.value(itemkey)));
