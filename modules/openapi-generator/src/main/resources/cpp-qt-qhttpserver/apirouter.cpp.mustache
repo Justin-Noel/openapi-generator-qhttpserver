@@ -1,0 +1,111 @@
+{{>licenseInfo}}
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QVariantMap>
+#include <QHttpServerRequest>
+#include <QHttpServerResponse>
+#include <QUrlQuery>
+
+#include "{{prefix}}ApiRouter.h"
+#include "{{prefix}}Helpers.h"
+
+{{#cppNamespaceDeclarations}}
+namespace {{this}} {
+{{/cppNamespaceDeclarations}}
+
+{{prefix}}ApiRouter::{{prefix}}ApiRouter(QHttpServer *server) : m_server(server) {
+    createApiHandlers();
+}
+
+{{prefix}}ApiRouter::~{{prefix}}ApiRouter(){
+
+}
+
+void {{prefix}}ApiRouter::createApiHandlers() { {{#apiInfo}}{{#apis}}
+    m{{classname}}Handler = QSharedPointer<{{classname}}Handler>::create();{{/apis}}{{/apiInfo}}
+}
+
+{{#apiInfo}}{{#apis}}
+void {{prefix}}ApiRouter::set{{classname}}Handler(QSharedPointer<{{classname}}Handler> handler){
+    m{{classname}}Handler = handler;
+}{{/apis}}{{/apiInfo}}
+
+void {{prefix}}ApiRouter::setupRoutes() {
+    {{#apiInfo}}{{#apis}}{{#operations}}{{#operation}}
+    // {{httpMethod}} {{{path}}}
+    m_server->route("{{{basePathWithoutHost}}}{{{path}}}",
+        QHttpServerRequest::Method::{{httpMethod}},
+        [this]({{#pathParams}}{{#isLong}}qint64{{/isLong}}{{#isInteger}}{{^isLong}}qint32{{/isLong}}{{/isInteger}}{{^isLong}}{{^isInteger}}const QString&{{/isInteger}}{{/isLong}} {{paramName}}{{^-last}}, {{/-last}}{{/pathParams}}{{#hasParams}}{{^hasPathParams}}const QHttpServerRequest &request{{/hasPathParams}}{{#hasPathParams}}, const QHttpServerRequest &request{{/hasPathParams}}{{/hasParams}}{{^hasParams}}const QHttpServerRequest &request{{/hasParams}}) {
+{{#hasQueryParams}}
+            // Query parameters
+            auto query = request.query();
+{{#queryParams}}
+            {{{dataType}}} {{paramName}}{{#defaultValue}} = {{{.}}}{{/defaultValue}};
+            if (query.hasQueryItem("{{baseName}}")) {
+                ::{{cppNamespace}}::fromStringValue(query.queryItemValue("{{baseName}}"), {{paramName}});
+            }
+{{/queryParams}}
+{{/hasQueryParams}}
+{{#hasBodyParam}}
+            // Body parameters
+{{#bodyParams}}{{#bodyParam}}
+            {{{dataType}}} {{paramName}};
+            QJsonDocument doc = QJsonDocument::fromJson(request.body());
+{{#isArray}}
+            QJsonArray jsonArray = doc.array();
+            for (const auto &item : jsonArray) {
+                {{items.baseType}} obj;
+                ::{{cppNamespace}}::fromJsonValue(obj, item);
+                {{paramName}}.append(obj);
+            }
+{{/isArray}}
+{{^isArray}}
+            ::{{cppNamespace}}::fromJsonValue({{paramName}}, doc.object());
+{{/isArray}}
+{{/bodyParam}}{{/bodyParams}}
+{{/hasBodyParam}}
+{{#hasHeaderParams}}
+            // Header parameters
+{{#headerParams}}
+            {{{dataType}}} {{paramName}};
+            if (request.headers().contains("{{baseName}}")) {
+                ::{{cppNamespace}}::fromStringValue(
+                    QString::fromUtf8(request.headers().value("{{baseName}}")), {{paramName}});
+            }
+{{/headerParams}}
+{{/hasHeaderParams}}
+
+            // Call handler
+            {{#returnType}}auto result = {{/returnType}}m{{classname}}Handler->{{nickname}}({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
+{{#returnType}}
+
+            // Serialize response
+{{#returnTypeIsPrimitive}}
+            QByteArray body = ::{{cppNamespace}}::toStringValue(result).toUtf8();
+            return QHttpServerResponse("text/plain", body);
+{{/returnTypeIsPrimitive}}
+{{^returnTypeIsPrimitive}}
+{{#isArray}}
+            QJsonArray jsonArray;
+            for (const auto &item : result) {
+                jsonArray.append(::{{cppNamespace}}::toJsonValue(item));
+            }
+            QJsonDocument doc(jsonArray);
+{{/isArray}}
+{{^isArray}}
+            QJsonDocument doc(::{{cppNamespace}}::toJsonValue(result).toObject());
+{{/isArray}}
+            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
+{{/returnTypeIsPrimitive}}
+{{/returnType}}
+{{^returnType}}
+            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+{{/returnType}}
+        });
+    {{/operation}}{{/operations}}{{/apis}}{{/apiInfo}}
+}
+
+{{#cppNamespaceDeclarations}}
+}
+{{/cppNamespaceDeclarations}}

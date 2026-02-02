@@ -1,0 +1,35 @@
+{{>licenseInfo}}
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QVariantMap>
+#include <QDebug>
+
+#include "{{classname}}Handler.h"
+
+{{#cppNamespaceDeclarations}}
+namespace {{this}} {
+{{/cppNamespaceDeclarations}}
+
+{{classname}}Handler::{{classname}}Handler(){
+
+}
+
+{{classname}}Handler::~{{classname}}Handler(){
+
+}
+
+{{#operations}}{{#operation}}{{#returnType}}{{{.}}}{{/returnType}}{{^returnType}}void{{/returnType}} {{classname}}Handler::{{nickname}}({{#allParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}}) {
+    {{#allParams}}
+    Q_UNUSED({{paramName}});
+    {{/allParams}}
+    {{#returnType}}
+    {{{.}}} res;
+    return res;
+    {{/returnType}}
+}
+{{/operation}}{{/operations}}
+
+{{#cppNamespaceDeclarations}}
+}
+{{/cppNamespaceDeclarations}}
