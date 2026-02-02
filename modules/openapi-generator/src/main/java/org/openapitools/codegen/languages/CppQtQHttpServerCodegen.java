@@ -18,11 +18,16 @@
 package org.openapitools.codegen.languages;
 
 import org.openapitools.codegen.CodegenConfig;
+import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.meta.features.DocumentationFeature;
+import org.openapitools.codegen.model.ModelMap;
+import org.openapitools.codegen.model.OperationMap;
+import org.openapitools.codegen.model.OperationsMap;
 
 import java.io.File;
+import java.util.List;
 
 import static org.openapitools.codegen.utils.StringUtils.camelize;
 
@@ -180,6 +185,24 @@ public class CppQtQHttpServerCodegen extends CppQtAbstractCodegen implements Cod
     @Override
     public String toApiFilename(String name) {
         return modelNamePrefix + sanitizeName(camelize(name)) + "ApiHandler";
+    }
+
+    @Override
+    public OperationsMap postProcessOperationsWithModels(OperationsMap objs, List<ModelMap> allModels) {
+        objs = super.postProcessOperationsWithModels(objs, allModels);
+
+        OperationMap objectMap = objs.getOperations();
+        List<CodegenOperation> operations = objectMap.getOperation();
+
+        // Set isDelete flag for DELETE operations
+        // Qt uses QHttpServerRequest::Method::Delete, not R_delete
+        for (CodegenOperation operation : operations) {
+            if ("DELETE".equalsIgnoreCase(operation.httpMethod)) {
+                operation.vendorExtensions.put("isDelete", Boolean.TRUE);
+            }
+        }
+
+        return objs;
     }
 
 }

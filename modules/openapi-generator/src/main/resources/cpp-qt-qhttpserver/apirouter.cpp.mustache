@@ -35,8 +35,9 @@ void {{prefix}}ApiRouter::setupRoutes() {
     {{#apiInfo}}{{#apis}}{{#operations}}{{#operation}}
     // {{httpMethod}} {{{path}}}
     m_server->route("{{{basePathWithoutHost}}}{{{path}}}",
-        QHttpServerRequest::Method::{{httpMethod}},
+        QHttpServerRequest::Method::{{#vendorExtensions.isDelete}}Delete{{/vendorExtensions.isDelete}}{{^vendorExtensions.isDelete}}{{#lambda.titlecase}}{{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}}{{/lambda.titlecase}}{{/vendorExtensions.isDelete}},
         [this]({{#pathParams}}{{#isLong}}qint64{{/isLong}}{{#isInteger}}{{^isLong}}qint32{{/isLong}}{{/isInteger}}{{^isLong}}{{^isInteger}}const QString&{{/isInteger}}{{/isLong}} {{paramName}}{{^-last}}, {{/-last}}{{/pathParams}}{{#hasParams}}{{^hasPathParams}}const QHttpServerRequest &request{{/hasPathParams}}{{#hasPathParams}}, const QHttpServerRequest &request{{/hasPathParams}}{{/hasParams}}{{^hasParams}}const QHttpServerRequest &request{{/hasParams}}) {
+            try {
 {{#hasQueryParams}}
             // Query parameters
             auto query = request.query();
@@ -51,9 +52,9 @@ void {{prefix}}ApiRouter::setupRoutes() {
             // Body parameters
 {{#bodyParams}}{{#bodyParam}}
             {{{dataType}}} {{paramName}};
-            QJsonDocument doc = QJsonDocument::fromJson(request.body());
+            QJsonDocument requestDoc = QJsonDocument::fromJson(request.body());
 {{#isArray}}
-            QJsonArray jsonArray = doc.array();
+            QJsonArray jsonArray = requestDoc.array();
             for (const auto &item : jsonArray) {
                 {{items.baseType}} obj;
                 ::{{cppNamespace}}::fromJsonValue(obj, item);
@@ -61,7 +62,7 @@ void {{prefix}}ApiRouter::setupRoutes() {
             }
 {{/isArray}}
 {{^isArray}}
-            ::{{cppNamespace}}::fromJsonValue({{paramName}}, doc.object());
+            ::{{cppNamespace}}::fromJsonValue({{paramName}}, requestDoc.object());
 {{/isArray}}
 {{/bodyParam}}{{/bodyParams}}
 {{/hasBodyParam}}
@@ -80,28 +81,35 @@ void {{prefix}}ApiRouter::setupRoutes() {
             {{#returnType}}auto result = {{/returnType}}m{{classname}}Handler->{{nickname}}({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
 {{#returnType}}
 
-            // Serialize response
+                // Serialize response
 {{#returnTypeIsPrimitive}}
-            QByteArray body = ::{{cppNamespace}}::toStringValue(result).toUtf8();
-            return QHttpServerResponse("text/plain", body);
+                QByteArray body = ::{{cppNamespace}}::toStringValue(result).toUtf8();
+                return QHttpServerResponse("text/plain", body);
 {{/returnTypeIsPrimitive}}
 {{^returnTypeIsPrimitive}}
 {{#isArray}}
-            QJsonArray jsonArray;
-            for (const auto &item : result) {
-                jsonArray.append(::{{cppNamespace}}::toJsonValue(item));
-            }
-            QJsonDocument doc(jsonArray);
+                QJsonArray jsonArray;
+                for (const auto &item : result) {
+                    jsonArray.append(::{{cppNamespace}}::toJsonValue(item));
+                }
+                QJsonDocument responseDoc(jsonArray);
 {{/isArray}}
 {{^isArray}}
-            QJsonDocument doc(::{{cppNamespace}}::toJsonValue(result).toObject());
+                QJsonDocument responseDoc(::{{cppNamespace}}::toJsonValue(result).toObject());
 {{/isArray}}
-            return QHttpServerResponse("application/json", doc.toJson(QJsonDocument::Compact));
+                return QHttpServerResponse("application/json", responseDoc.toJson(QJsonDocument::Compact));
 {{/returnTypeIsPrimitive}}
 {{/returnType}}
 {{^returnType}}
-            return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
+                return QHttpServerResponse(QHttpServerResponse::StatusCode::Ok);
 {{/returnType}}
+            } catch (const std::exception& e) {
+                // Return error response
+                {{prefix}}ErrorResponse error;
+                error.setError(QString::fromStdString(e.what()));
+                QJsonDocument errorDoc(::{{cppNamespace}}::toJsonValue(error).toObject());
+                return QHttpServerResponse("application/json", errorDoc.toJson(QJsonDocument::Compact), QHttpServerResponse::StatusCode::BadRequest);
+            }
         });
     {{/operation}}{{/operations}}{{/apis}}{{/apiInfo}}
 }
